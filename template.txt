@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>$name - Comic Viewer</title>
+    <style>
+        body { text-align: center; }
+        img { border: 0pt none; }
+        .divider { display: none; }
+        #header { margin: 4pt; }
+        #title { margin: 8pt; }
+        .navigation a { display: inline-block; vertical-align: middle; cursor: pointer; }
+        select { width: 40%; vertical-align: middle; }
+        .navFirst { width: 10%; }
+        .navPrev { width: 10%; }
+        .navNext { width: 10%; }
+        .navLast { width: 10%; }
+        .navRand { width: auto; padding-left: 1pt; padding-right: 1pt; }
+        form { display: inline; }
+        #stripContainer { margin: 8pt auto; }
+        #stripContainer img { display: block; margin-left: auto; margin-right: auto; }
+        #comicPlaceholder { height: 300px; font-size: 30pt; line-height: 300px; }
+        #blogContainer { display: none; }
+        #blog { margin: 16pt; }
+        #bonusContainer { display: none; }
+        #bonusFrame { border: none; height: 30pt; }
+        #footerContainer { text-align: left; font-size: xx-small;
+                           border-top: 1px solid black; 
+                           margin: 0 5%; margin-top: 36pt; padding: 0.5em 1em; }
+        #creditsContainer { display: inline-block; width: 75%; }
+        #optionsContainer { display: inline-block; width: 24%; 
+                            float: right; text-align: right; }
+        #creditsHeader, #optionsHeader { font-weight: bolder; }
+        #lastUpdatedContainer { padding-top: 8pt; font-style: italic;
+                                display: inline-block; }
+        #helpPanelToggle { padding-top: 8pt; text-align: right; float: right;
+                           font-style: italic; display: inline-block; }
+        #loadingScreen { background: rgba(0, 0, 0, 0.75); color: white;
+                         position: fixed; top: 0px; left: 0px;
+                         width: 100%; height: 100%; }
+        #loadingContainer { background: rgba(0, 0, 0, 0.75); border-radius: 1em;
+                            position: absolute; height: 200px; width: 300px;
+                            top: 0px; bottom: 0px; left: 0px; right: 0px;
+                            margin: auto; }
+        #loadingMessage { font-size: xx-large; }
+        #loadingAnimation { padding-top: 1em; }
+        .helpToggleLink { cursor: pointer; }
+        #helpScreen { background: rgba(0, 0, 0, 0.75); color: white;
+                      position: fixed; top: 0px; left: 0px;
+                      width: 100%; height: 100%; }
+        #helpContainer { background: rgba(0, 0, 0, 0.75); border-radius: 1em;
+                         position: absolute; height: 200pt; width: 200pt;
+                         top: 0px; bottom: 0px; left: 0px; right: 0px;
+                         margin: auto; }
+        #helpContainer caption { font-size: x-large; }
+        #helpCloseLink { margin-top: 1em; display: inline-block;
+                         text-decoration: underline; color: white; }
+        #helpCloseLink:hover { color: gray; }
+        /* Nobody can support <colgroup> correctly, so do it this way */
+        #helpContainer tr td:first-child { text-align: left; }
+        #helpContainer tr td:last-child { text-align: right; }
+        #noJS { font-weight: bold; font-size: 12pt; padding: 0.5em; }
+        
+        /* Loading animation style stuff */
+        /* Keyframes */
+        @-webkit-keyframes fadeOut {
+            from { opacity: 1.0 }
+            60%  { opacity: 0.0 }
+            to   { opacity: 0.0 }
+        }
+        @-moz-keyframes fadeOut {
+            from { opacity: 1.0 }
+            60%  { opacity: 0.0 }
+            to   { opacity: 0.0 }
+        }
+        @-o-keyframes fadeOut {
+            from { opacity: 1.0 }
+            60%  { opacity: 0.0 }
+            to   { opacity: 0.0 }
+        }
+        @-ms-keyframes fadeOut {
+            from { opacity: 1.0 }
+            60%  { opacity: 0.0 }
+            to   { opacity: 0.0 }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1.0 }
+            60%  { opacity: 0.0 }
+            to   { opacity: 0.0 }
+        }
+        
+        /* Common animation stuff */
+        .progressanim {
+            display: inline-block;
+            text-align: center;
+            width: 45%;
+        }
+        .progressanim div {
+            background-color: gray;
+            -webkit-animation-duration: 2s;
+            -webkit-animation-timing-function: linear;
+            -webkit-animation-iteration-count: infinite;
+            -moz-animation-duration: 2s;
+            -moz-animation-timing-function: linear;
+            -moz-animation-iteration-count: infinite;
+            -o-animation-duration: 2s;
+            -o-animation-timing-function: linear;
+            -o-animation-iteration-count: infinite;
+            -ms-animation-duration: 2s;
+            -ms-animation-timing-function: linear;
+            -ms-animation-iteration-count: infinite;
+            animation-duration: 2s;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+        .block-0 {
+            -webkit-animation-delay: -1.75s;
+            -moz-animation-delay: -1.75s;
+            -o-animation-delay: -1.75s;
+            -ms-animation-delay: -1.75s;
+            animation-delay: -1.75s;
+        }
+        .block-1 {
+            -webkit-animation-delay: -1.5s;
+            -moz-animation-delay: -1.5s;
+            -o-animation-delay: -1.5s;
+            -ms-animation-delay: -1.5s;
+            animation-delay: -1.5s;
+        }
+        .block-2 {
+            -webkit-animation-delay: -1.25s;
+            -moz-animation-delay: -1.25s;
+            -o-animation-delay: -1.25s;
+            -ms-animation-delay: -1.25s;
+            animation-delay: -1.25s;
+        }
+        .block-3 {
+            -webkit-animation-delay: -1s;
+            -moz-animation-delay: -1s;
+            -o-animation-delay: -1s;
+            -ms-animation-delay: -1s;
+            animation-delay: -1s;
+        }
+        .block-4 {
+            -webkit-animation-delay: -0.75s;
+            -moz-animation-delay: -0.75s;
+            -o-animation-delay: -0.75s;
+            -ms-animation-delay: -0.75s;
+            animation-delay: -0.75s;
+        }
+        .block-5 {
+            -webkit-animation-delay: -0.5s;
+            -moz-animation-delay: -0.5s;
+            -o-animation-delay: -0.5s;
+            -ms-animation-delay: -0.5s;
+            animation-delay: -0.5s;
+        }
+        .block-6 {
+            -webkit-animation-delay: -0.25s;
+            -moz-animation-delay: -0.25s;
+            -o-animation-delay: -0.25s;
+            -ms-animation-delay: -0.25s;
+            animation-delay: -0.25s;
+        }
+        .block-7 {
+            -webkit-animation-delay: 0s;
+            -moz-animation-delay: 0s;
+            -o-animation-delay: 0s;
+            -ms-animation-delay: 0s;
+            animation-delay: 0s;
+        }
+        
+        /* Fade block circle */
+        #blockcircleanim {
+            height: 6em;
+            margin-top: 1em;
+        }
+        #blockcircleanim div {
+            margin-left: auto; margin-right: auto;
+            position: relative;
+            width: 0.6em; height: 2em;
+            border-radius: 0.25em;
+            -webkit-animation-name: fadeOut;
+            -moz-animation-name: fadeOut;
+            -o-animation-name: fadeOut;
+            -ms-animation-name: fadeOut;
+            animation-name: fadeOut;
+        }
+        .blockcirc-1 {
+            -webkit-transform: translate(1.41em, -1.41em) rotate(45deg);
+            -moz-transform: translate(1.41em, -1.41em) rotate(45deg);
+            -o-transform: translate(1.41em, -1.41em) rotate(45deg);
+            -ms-transform: translate(1.41em, -1.41em) rotate(45deg);
+            transform: translate(1.41em, -1.41em) rotate(45deg);
+        }
+        .blockcirc-2 {
+            -webkit-transform: translate(2em, -2em) rotate(90deg);
+            -moz-transform: translate(2em, -2em) rotate(90deg);
+            -o-transform: translate(2em, -2em) rotate(90deg);
+            -ms-transform: translate(2em, -2em) rotate(90deg);
+            transform: translate(2em, -2em) rotate(90deg);
+        }
+        .blockcirc-3 {
+            -webkit-transform: translate(1.41em, -2.58em) rotate(135deg);
+            -moz-transform: translate(1.41em, -2.58em) rotate(135deg);
+            -o-transform: translate(1.41em, -2.58em) rotate(135deg);
+            -ms-transform: translate(1.41em, -2.58em) rotate(135deg);
+            transform: translate(1.41em, -2.58em) rotate(135deg);
+        }
+        .blockcirc-4 {
+            -webkit-transform: translateY(-4em);
+            -moz-transform: translateY(-4em);
+            -o-transform: translateY(-4em);
+            -ms-transform: translateY(-4em);
+            transform: translateY(-4em);
+        }
+        .blockcirc-5 {
+            -webkit-transform: translate(-1.41em, -6.58em) rotate(225deg);
+            -moz-transform: translate(-1.41em, -6.58em) rotate(225deg);
+            -o-transform: translate(-1.41em, -6.58em) rotate(225deg);
+            -ms-transform: translate(-1.41em, -6.58em) rotate(225deg);
+            transform: translate(-1.41em, -6.58em) rotate(225deg);
+        }
+        .blockcirc-6 {
+            -webkit-transform: translate(-2em, -10em) rotate(270deg);
+            -moz-transform: translate(-2em, -10em) rotate(270deg);
+            -o-transform: translate(-2em, -10em) rotate(270deg);
+            -ms-transform: translate(-2em, -10em) rotate(270deg);
+            transform: translate(-2em, -10em) rotate(270deg);
+        }
+        .blockcirc-7 {
+            -webkit-transform: translate(-1.41em, -13.41em) rotate(315deg);
+            -moz-transform: translate(-1.41em, -13.41em) rotate(315deg);
+            -o-transform: translate(-1.41em, -13.41em) rotate(315deg);
+            -ms-transform: translate(-1.41em, -13.41em) rotate(315deg);
+            transform: translate(-1.41em, -13.41em) rotate(315deg);
+        }
+    </style>    
+    <link rel="stylesheet" type="text/css" href="resource/style.css" />
+    <link rel="shortcut icon" type="image/vnd.microsoft.icon" href="resource/favicon.ico" />
+</head>
+
+
+<body>
+
+<!-- Main page -->
+<div id="topContainer">
+
+<div id="headerContainer">
+    <a href="$url"><img id="header" src="resource/header.png" /></a>
+</div>
+
+<div id="header2title"></div>
+
+<div id="comicContainer">
+    <h1 id="title">$name</h1>
+    
+    <div id="title2nav" class="divider"></div>
+    
+    <div id="navigation-top" class="navigation">
+        <a class="navFirst">|&lt; First</a>
+        <a class="navPrev">&lt;&lt; Prev</a>
+        <form>
+            <select class="selector"></select>
+        </form>
+        <a class="navRand">?</a>
+        <a class="navNext">Next &gt;&gt;</a>
+        <a class="navLast">Last &gt;|</a>
+    </div>
+    
+    <div id="nav2comic" class="divider"></div>
+    
+    <div id="stripContainer">
+        <div id="comicPlaceholder">Waiting for page to finish loading...</div>
+    </div>
+    
+    <div id="comic2nav-bottom" class="divider"></div>
+    
+    <div id="navigation-bottom" class="navigation">
+        <a class="navFirst">|&lt; First</a>
+        <a class="navPrev">&lt;&lt; Prev</a>
+        <form>
+            <select class="selector"></select>
+        </form>
+        <a class="navRand">?</a>
+        <a class="navNext">Next &gt;&gt;</a>
+        <a class="navLast">Last &gt;|</a>
+    </div>
+</div>
+
+<div id="nav-bottom2blog" class="divider"></div>
+
+<div id="blogContainer">
+    <div id="blog"></div>
+    
+    <div id="blog2nav-blog"></div>
+    
+    <div id="navigation-blog" class="navigation">
+        <a class="navFirst">|&lt; First</a>
+        <a class="navPrev">&lt;&lt; Prev</a>
+        <form>
+            <select class="selector"></select>
+        </form>
+        <a class="navRand">?</a>
+        <a class="navNext">Next &gt;&gt;</a>
+        <a class="navLast">Last &gt;|</a>
+    </div>
+</div>
+
+<div id="blog2bonus"></div>
+
+<div id="bonusContainer">
+    <iframe id="bonusFrame" src="resource/bonus.html">
+        Bonus content not available: your browser does not support iframes.
+        Why don't you upgrade to one released this century?
+    </iframe>
+</div>
+
+<div id="bonus2footer"></div>
+
+<div id="footerContainer">
+    <div id="footerContents">
+        <div id="creditsContainer">
+            <div id="creditsHeader">Credits</div>
+            <div id="ownershipNotice">All comics property of the author, $author.</div>
+            <div id="originalUrl">Original url of this strip: <a id="stripUrl"></a></div>
+        </div>
+        <div id="optionsContainer">
+            <div id="optionsHeader">Options</div>
+            <form id="optionsForm">
+                <label id="storyLabel" for="storyCheck">Storyline:</label>
+                <input id="storyCheck" type="checkbox" checked="checked" />
+                <label id="extrasLabel" for="extrasCheck">Extras:</label>
+                <input id="extrasCheck" type="checkbox" checked="checked" />
+            </form>
+        </div>
+        <div id="lastUpdatedContainer">
+            Comic data last updated: $timestamp
+        </div>
+        <div id="helpPanelToggle">
+            <a class="helpToggleLink">Keybindings</a>
+        </div>
+    </div>
+</div>
+
+</div> <!-- /topContainer -->
+
+<!-- This is the overlay you see while the database is downloading -->
+<div id="loadingScreen">
+    <div id="loadingContainer" style="display: table;">
+        <div style="display: table-cell; vertical-align: middle;">
+            <div id="loadingMessage">loading...</div>
+            <div id="blockcircleanim" class="progressanim">
+                <div class="block-0 blockcirc-0"></div>
+                <div class="block-1 blockcirc-1"></div>
+                <div class="block-2 blockcirc-2"></div>
+                <div class="block-3 blockcirc-3"></div>
+                <div class="block-4 blockcirc-4"></div>
+                <div class="block-5 blockcirc-5"></div>
+                <div class="block-6 blockcirc-6"></div>
+                <div class="block-7 blockcirc-7"></div>
+            </div>
+            <noscript id="noJS">Error: You must enable JavaScript for this page to function.</noscript>
+        </div>
+    </div>
+</div>
+
+<!-- This is the overlay for the help screen -->
+<div id="helpScreen" style="display: none">
+    <div id="helpContainer" style="display: table;">
+        <div style="display: table-cell; vertical-align: middle;">
+            <table style="width: 75%; margin: 0 auto;">
+                <caption>Keybindings</caption>
+                <tr>
+                    <td>], Num +</td>
+                    <td>Next</td>
+                </tr>
+                <tr>
+                    <td>[, Num -</td>
+                    <td>Previous</td>
+                </tr>
+                <tr>
+                    <td>-, Num /</td>
+                    <td>First</td>
+                </tr>
+                <tr>
+                    <td>=, Num *</td>
+                    <td>Last</td>
+                </tr>
+                <tr>
+                    <td>\, Num 0</td>
+                    <td>Random</td>
+                </tr>
+                <tr>
+                    <td>H, ?</td>
+                    <td>Help</td>
+                </tr>
+            </table>
+            <a id="helpCloseLink" class="helpToggleLink">close</a>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts required for the viewer to function -->
+<script src="resource/comicdb.js" type="text/javascript"></script>
+<script src="resource/comiclib.js" type="text/javascript"></script>
+<script src="resource/postprocess.js" type="text/javascript"></script>
+<script>
+    var comicName = "$name";
+    var titleFormat = "$titleformat";
+    var listFormat = "$listformat";
+</script>
+
+</body>
+
+</html>
