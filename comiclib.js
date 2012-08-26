@@ -1,11 +1,11 @@
-/* Comic viewer javascript code (comiclib)
+/* Comic viewer JavaScript code (comiclib)
  * Author: David Powell (BitLooter)
  * 
  * Compatibility notes:
- * 	Tested to work on modern versions of all major browsers (FF 4+, IE 8+,
+ *  Tested to work on modern versions of all major browsers (FF 4+, IE 8+,
  *  Opera 10+, Safari, and Chrome have all been tested).
  * 
- * 	All efforts have been made to write this standards-complient with the
+ *  All efforts have been made to write this standards-complaint with the
  *  current HTML5 draft, though it should also work as HTML4/XHTML. The only
  *  HTML5 tech used to date is localStorage, for saving settings and the last
  *  read strip; this was used because cookies turned out to be problematic
@@ -16,7 +16,7 @@
  *  the current strip when using the browser's navigation buttons, but the
  *  viewer will still function without it.
  *  
- *  The viewer itself only uses localStorage, but no such guarentee can be
+ *  The viewer itself only uses localStorage, but no such guarantee can be
  *  made of the content. Some scrapers written for this make use of multimedia
  *  features such as <video> tags, for example. As blog information is
  *  typically taken directly from the source site, these HTML segments do not
@@ -34,6 +34,8 @@
  *  support out-of-date browsers.
  * 
  * Version history:
+ *  2012-08-26 v2.0    Refactored this file. All comic-related functions are in viewer.
+ *                     Also, no more (unnecessary) global variables.
  *  2011-11-04 v1.9.3  Added hashChanged function to watch the URL hash
  *  2011-06-08 v1.9.2  Changed random keybinding to Num 0
  *                     Moved JS event binding from template to initViewer()
@@ -46,7 +48,7 @@
  *  2011-02-03 v1.8.2  Added nav bar below blog, blog hidden when not present
  *  2011-01-23 v1.8    Added loading screen, large databases have long parse times
  *  2011-01-18 v1.7.1  Recognizes listtype of 'none'
- *  2011-01-10 v1.7	   Added keyboard accelerators
+ *  2011-01-10 v1.7    Added keyboard accelerators
  *  2011-01-02 v1.6.3  Added 'listtype' field to info.txt
  *  2010-12-14 v1.6.2  Comics without images (blog only) are now displayed correctly
  *  2010-12-09 v1.6.1  Page scrolls to top on comic strip load
@@ -54,345 +56,158 @@
  *                     localStorage support added. Disabled because of issues.
  *                     Date displayed in title bar
  *  2010-10-16 v1.5    Added ability to toggle display of storyline and extras
- *  2010-10-13 v1.4.1: Fixed out-of-bounds error when loading strip ID in URL
- *  2010-10-12 v1.4:   Added footer
+ *  2010-10-13 v1.4.1  Fixed out-of-bounds error when loading strip ID in URL
+ *  2010-10-12 v1.4    Added footer
  *                     Strip ID in URL
- *  2010-10-09 v1.3.1: Hides strip area when only blog text is present
- *  2010-10-01 v1.3:   Added support for custom postprocessing scripts
- *  2010-09-26 v1.2:   Added support for multiple image comics
+ *  2010-10-09 v1.3.1  Hides strip area when only blog text is present
+ *  2010-10-01 v1.3    Added support for custom postprocessing scripts
+ *  2010-09-26 v1.2    Added support for multiple image comics
  *                     Corrected HTML formatting issues on blog text
- *  2010-09-21 v1.1.1: Caches first and last images
- *  2010-09-16 v1.1:   Caches random pick
- *  2010-09-14 v1.0.1: Simplified code, refactored some CSS classes/ids
- *  2010-09-09 v1.0:   Next and previous images cached for faster viewing
+ *  2010-09-21 v1.1.1  Caches first and last images
+ *  2010-09-16 v1.1    Caches random pick
+ *  2010-09-14 v1.0.1  Simplified code, refactored some CSS classes/ids
+ *  2010-09-09 v1.0    Next and previous images cached for faster viewing
  *                     Declared it worthy of v1.0
- *  2010-09-08 v0.9b2: Added date/episode prefixes to selector
+ *  2010-09-08 v0.9b2  Added date/episode prefixes to selector
  *                     Moved init code to this file
- * 	2010-09-05 v0.9b1: Initial basic feature-complete version
+ *  2010-09-05 v0.9b1  Initial basic feature-complete version
+ * 
+ * TODO: close help window if you click outside the help pane
+ * TODO: blur selection box after selection is made
+ * TODO: do something about magic numbers
  */
 
+
+/* Utility functions *
+ *********************/
+
+// Removes all child nodes from a DOM element
 function clearNodeContents(element)
 {
     while(element.firstChild != null)
         element.removeChild(element.firstChild);
 }
 
-//Saves a piece of data to the local system
+//Saves a piece of data to localStorage
 function saveData(name, value)
 {
-	// Firefox has a bug that throws an error checking for localStorage if
-	// cookies are disabled. This bug is still present as of v7.0.1.
-	
-	try {
-		if (typeof(localStorage) != "undefined")
-		{
-			localStorage.setItem(name, value);
-		}
-	} catch(e) {
-		return null;
-	}
-}
-
-// Gets a piece of data to the local system
-function getData(name)
-{
-	// See saveData - localStorage has issues on Firefox
-	
-	try {
-		if (typeof(localStorage) != "undefined")
-		{
-			return localStorage.getItem(name);
-		}
-	} catch(e) {
-		return null;
-	}
-}
-
-//Sets the onclick property of all elements with a given class name
-function setOnclicks(className, func)
-{
-    elements = document.getElementsByClassName(className);
-    for (i = 0; i < elements.length; i++)
-    {
-    	elements[i].onclick = func;
+    // Firefox has a bug that throws an error checking for localStorage if
+    // cookies are disabled. This bug is still present as of v7.0.1.
+    
+    try {
+        if (typeof(localStorage) != "undefined")
+        {
+            localStorage.setItem(name, value);
+        }
+    } catch(e) {
+        return null;
     }
 }
 
-//Sets the onchange property of all elements with a given class name
-function setOnchanges(className, func)
+// Gets a piece of data from localStorage
+function getData(name)
 {
-    elements = document.getElementsByClassName(className);
-    for (i = 0; i < elements.length; i++)
+    // See saveData - localStorage has issues on Firefox
+    
+    try {
+        if (typeof(localStorage) != "undefined")
+        {
+            return localStorage.getItem(name);
+        }
+    } catch(e) {
+        return null;
+    }
+}
+
+// Adds an event listener to all elements with a given class name
+function setClassEvents(className, eventType, func)
+{
+    var elements = document.getElementsByClassName(className);
+    for (var i = 0; i < elements.length; i++)
     {
-    	elements[i].onchange = func;
+        elements[i].addEventListener(eventType, func, false);
     }
 }
 
 // Hides all elements with a given class name
 function hideByClassName(className)
 {
-    elements = document.getElementsByClassName(className);
-    for (i = 0; i < elements.length; i++)
+    var elements = document.getElementsByClassName(className);
+    for (var i = 0; i < elements.length; i++)
     {
-    	elements[i].style.visibility = "hidden";
+        elements[i].style.visibility = "hidden";
     }
 }
 
-// Shows all elements witha a given class name
+// Shows all elements with a given class name
 function showByClassName(className)
 {
-    elements = document.getElementsByClassName(className);
-    for (i = 0; i < elements.length; i++)
+    var elements = document.getElementsByClassName(className);
+    for (var i = 0; i < elements.length; i++)
     {
-    	elements[i].style.visibility = "visible";
+        elements[i].style.visibility = "visible";
     }
 }
 
-// Hides comic strip for when there is only blog content
-function hideStrip()
-{
-	hideById("title2nav");
-	hideById("navigation-top");
-	hideById("nav2comic");
-	hideById("stripContainer");
-	hideById("comic2nav-bottom");
-}
-
-function showStrip()
-{
-	showById("title2nav");
-	showById("navigation-top");
-	showById("nav2comic");
-	showById("stripContainer");
-	showById("comic2nav-bottom");
-}
-
+// Hides an element with a given ID
 function hideById(id)
 {
-	document.getElementById(id).style.display = "none";
+    document.getElementById(id).style.display = "none";
 }
 
+// Shows a previously hidden element with a given ID
 function showById(id)
 {
-	document.getElementById(id).style.display = "block";
+    document.getElementById(id).style.display = "block";
 }
 
 // Preloads an image so it's in the browser's cache, ready for instant viewing
 function cacheImage(url)
 {
-	imageCache = document.createElement("img");
-	imageCache.src = url;
+    var imageCache = document.createElement("img");
+    imageCache.src = url;
 }
 
 // Caches multiple image filenames joined by "||" characters
 function cacheJoinedImages(prefix, filenames)
 {
-	splitFiles = filenames.split("||");
-	if (splitFiles != "")
-	{
-		for (i = 0; i < splitFiles.length; i++)
-		{
-			cacheImage(prefix+splitFiles[i]);
-		}
-	}
-}
-
-// Precaches next and previous comics for fast loading
-function preloadComics()
-{
-    var prevComic = closestAllowedComic(-1);
-    if (prevComic != -1)
+    var splitFiles = filenames.split("||");
+    if (splitFiles != "")
     {
-        cacheJoinedImages("comics/", comicDB[prevComic]["filename"]);
+        for (var i = 0; i < splitFiles.length; i++)
+        {
+            cacheImage(prefix+splitFiles[i]);
+        }
     }
-    var nextComic = closestAllowedComic(1);
-    if (nextComic != -1)
-    {
-        cacheJoinedImages("comics/", comicDB[nextComic]["filename"]);
-    }
-    cacheJoinedImages("comics/", comicDB[firstAllowedComic()]["filename"]);
-    cacheJoinedImages("comics/", comicDB[lastAllowedComic()]["filename"]);
-}
-
-function storyCheckChanged()
-{
-	extrasCheck = document.getElementById("extrasCheck");
-	if (!this.checked && extrasCheck.checked == false)
-	{
-		extrasCheck.checked = true;
-	}
-	preloadComics();
-    viewer.selectNextRandomComic();
-    saveOptions();
-}
-
-function extrasCheckChanged()
-{
-	storyCheck = document.getElementById("storyCheck");
-	if (!this.checked && storyCheck.checked == false)
-	{
-		storyCheck.checked = true;
-	}
-	preloadComics();
-    viewer.selectNextRandomComic();
-    saveOptions();
-}
-
-function saveOptions()
-{
-    // Save storyline status
-    saveData(comicName+"-usestory", useStory());
-    // Save extras status
-    saveData(comicName+"-useextras", useExtras());
-}
-
-function closestAllowedComic(direction)
-{
-	// Normalize direction
-	direction = direction / Math.abs(direction);
-	
-	for (comic = viewer.currentComic + direction;
-			comic >= 0 && comic < comicDB.length;
-			comic += direction)
-	{
-		if (comicAllowed(comic))
-		{
-			return comic;
-		}
-	}
-	
-	// If the function made it this far, no valid comics found
-	return -1;
-}
-
-// Returns ID of first valid comic with current settings
-function firstAllowedComic()
-{
-	for (i = 0; i < comicDB.length; i++)
-	{
-		if (comicAllowed(i))
-		{
-			return i;
-		}
-	}
-}
-
-// Returns ID of last valid comic with current settings
-function lastAllowedComic()
-{
-	for (i = comicDB.length - 1; i >= 0; i--)
-	{
-		if (comicAllowed(i))
-		{
-			return i;
-		}
-	}
-}
-
-// Returns true or false depending on current selected options
-function comicAllowed(comicID)
-{
-	if (comicDB[comicID]["isstoryline"] && useStory() ||
-			!comicDB[comicID]["isstoryline"] && useExtras())
-	{
-		return true;
-	} else
-	{
-		return false;
-	}
-}
-
-// Returns True if the story checkbox is marked
-function useStory()
-{
-	return document.getElementById("storyCheck").checked
-}
-
-//Returns True if the extras checkbox is marked
-function useExtras()
-{
-	return document.getElementById("extrasCheck").checked
-}
-
-// Increments comic forwards or backwards - positive is next, negative is prev
-function incComic(direction)
-{
-	nextComic = closestAllowedComic(direction);
-	if (nextComic != -1)
-	{
-		viewer.setComic(nextComic);
-	}
-	
-	return nextComic;
-}
-
-function goFirst()
-{
-	viewer.setComic(firstAllowedComic());
-}
-
-function goPrev()
-{
-	return incComic(-1);
-}
-
-function goNext()
-{
-	return incComic(1);
-}
-
-function goLast()
-{
-	viewer.setComic(lastAllowedComic());
-}
-
-function goRandom()
-{
-	viewer.setComic(viewer.nextRandom);
-	viewer.selectNextRandomComic();
-}
-
-function comicSelected()
-{
-    viewer.setComic(this.selectedIndex);
-}
-
-// Replaces variables in string with data
-function replaceVariables(inputString, comic)
-{
-	outputString = inputString;
-	outputString = outputString.replace("%episode%", comic["episode"]);
-	outputString = outputString.replace("%date%", comic["date"]);
-	outputString = outputString.replace("%title%", comic["title"]);
-	return outputString;
 }
 
 var viewer = {
     init: function()
     {
         // Populate the comic selector dropboxes
-        var selectBoxes = document.getElementsByClassName("selector");
-        for (i = 0; i < comicDB.length; i++)
+        for (var i = 0; i < comicDB.length; i++)
         {
-            var optionText = replaceVariables(listFormat, comicDB[i]);
+            var optionText = viewer.replaceVariables(listFormat, comicDB[i]);
             var option = document.createElement("option");
             option.innerHTML = optionText;
-            for (var selectNum = 0; selectNum < selectBoxes.length; selectNum++)
+            for (var selectNum = 0; selectNum < viewer.selectBoxes.length; selectNum++)
             {
-                selectBoxes[selectNum].appendChild(option.cloneNode(true));
+                viewer.selectBoxes[selectNum].appendChild(option.cloneNode(true));
             }
         }
         
-        // Set up the navagation links
-        setOnclicks("navFirst", goFirst);
-        setOnclicks("navPrev", goPrev);
-        setOnclicks("navNext", goNext);
-        setOnclicks("navLast", goLast);
-        setOnclicks("navRand", goRandom);
-        setOnclicks("helpToggleLink", viewer.toggleHelpPanel);
-        setOnchanges("selector", comicSelected);
-        document.getElementById("storyCheck").onchange = storyCheckChanged;
-        document.getElementById("extrasCheck").onchange = extrasCheckChanged;
+        // Set up the navigation links
+        setClassEvents("navFirst", "click", viewer.goFirst);
+        setClassEvents("navPrev", "click", viewer.goPrev);
+        setClassEvents("navNext", "click", viewer.goNext);
+        setClassEvents("navLast", "click", viewer.goLast);
+        setClassEvents("navRand", "click", viewer.goRandom);
+        setClassEvents("helpToggleLink", "click", viewer.toggleHelpPanel);
+        setClassEvents("selector", "change", function(){ viewer.setComic(this.selectedIndex); });
+        
+        // Watch the options checkboxes
+        document.getElementById("storyCheck").addEventListener("change", viewer.storyCheckChanged, false);
+        document.getElementById("extrasCheck").addEventListener("change", viewer.extrasCheckChanged, false);
         
         // Set comic to URL hash, if it's defined
         if (window.location.hash != "")
@@ -413,7 +228,7 @@ var viewer = {
 
         // Prepare first random comic
         viewer.selectNextRandomComic();
-
+        
         // Restore story/extras settings
         var story = getData(comicName+"-usestory");
         if (story != null)
@@ -426,6 +241,10 @@ var viewer = {
             document.getElementById("extrasCheck").checked = (extras == "true");
         }
 
+        // Cache first and last comics
+        cacheJoinedImages("comics/", comicDB[viewer.firstAllowedComic()]["filename"]);
+        cacheJoinedImages("comics/", comicDB[viewer.lastAllowedComic()]["filename"]);
+        
         // Set up keyboard accelerators
         window.addEventListener("keyup", viewer.keyPressedEvent, false);
 
@@ -442,35 +261,35 @@ var viewer = {
         document.getElementById("loadingScreen").style.display = "none";
     },
     
+    // Sets the current comic and all metadata to comicNum's comic
     setComic: function(comicNum)
     {
         viewer.currentComic = comicNum;
         var comic = comicDB[comicNum];
         
         // Set the window title
-        var prefix = replaceVariables(titleFormat, comic);
+        var prefix = viewer.replaceVariables(titleFormat, comic);
         window.document.title = prefix + " - Comic viewer";
         
         // Set hash in URL
         window.location.hash = comicNum;
         
         // Set the selector
-        var selectBoxes = document.getElementsByClassName("selector");
-        for (var i = 0; i < selectBoxes.length; i++)
+        for (var i = 0; i < viewer.selectBoxes.length; i++)
         {
-            selectBoxes[i].selectedIndex = comicNum;
+            viewer.selectBoxes[i].selectedIndex = comicNum;
         }
         
         // Set the title
-        var titleElement = document.getElementById("title");
-        titleElement.innerHTML = comic["title"];
+        viewer.titleElement.innerHTML = comic["title"];
         
         // Set the comic
-        var stripContainer = document.getElementById("stripContainer");
-        clearNodeContents(stripContainer);
+        clearNodeContents(viewer.stripContainer);
         var files = comic["filename"].split("||");
-        for (i = 0; i < files.length; i++)
+        // Loop over all images and add them to the strip container
+        for (var i = 0; i < files.length; i++)
         {
+            // Fill the strip area with the images
             var filename = "comics/"+files[i];
             // special processing for Flash files
             if (filename.indexOf(".swf") != -1)
@@ -490,6 +309,7 @@ var viewer = {
                 imageElement.alt = "Error loading comic: "+filename;
             }
             
+            // If the comic has an alternate link, wrap the image in link anchor
             if (comic["alternate"] != "")
             {
                 var linkElement = document.createElement("a");
@@ -497,37 +317,36 @@ var viewer = {
                 linkElement.href = altFile;
                 linkElement.appendChild(imageElement);
                 var element = linkElement;
-            } else
+            } else  // else no alternate link, image element is the one to use
             {
                 element = imageElement;
             }
             
-            stripContainer.appendChild(element);
+            // Add the element to the container
+            viewer.stripContainer.appendChild(element);
         }
         
         // Preload the next and previous images for faster viewing
-        preloadComics();
+        viewer.preloadComics();
         
         // Set the blog text
-        var blogContainer = document.getElementById("blogContainer");
         var blogText = comicDB[comicNum]["blogtext"];
         if (blogText != "")
         {
             var blogElement = document.getElementById("blog");
             clearNodeContents(blogElement);
             blogElement.innerHTML = blogText;
-            blogContainer.style.display = "block";
+            viewer.blogContainer.style.display = "block";
         } else
         {
-            blogContainer.style.display = "none";
+            viewer.blogContainer.style.display = "none";
         }
         
         // Set the footer info
         var url = comicDB[comicNum]["url"];
-        var linkElement = document.getElementById("stripUrl");
-        clearNodeContents(linkElement);
-        linkElement.appendChild(document.createTextNode(url));
-        linkElement.href = url;
+        clearNodeContents(viewer.linkElement);
+        viewer.linkElement.appendChild(document.createTextNode(url));
+        viewer.linkElement.href = url;
         
         // Disable buttons, if needed
         if (comicNum == 0)
@@ -556,10 +375,10 @@ var viewer = {
         // If no image, hide strip area
         if (comic["filename"] == "" || comic["filename"] == undefined)
         {
-            hideStrip();
+            viewer.hideStrip();
         } else
         {
-            showStrip();
+            viewer.showStrip();
         }
         
         // Do any needed comic postprocessing
@@ -572,6 +391,167 @@ var viewer = {
         window.scroll(0, 0);
     },
     
+    // Increments comic forwards or backwards - positive is next, negative is prev
+    incComic: function(direction)
+    {
+        var nextComic = viewer.closestAllowedComic(direction);
+        if (nextComic != -1)
+        {
+            viewer.setComic(nextComic);
+        }
+        
+        return nextComic;
+    },
+    
+    // Jumps to the first valid comic
+    goFirst: function()
+    {
+        viewer.setComic(viewer.firstAllowedComic());
+    },
+    
+    // Jumps to the previous valid comic
+    goPrev: function()
+    {
+        viewer.incComic(-1);
+    },
+    
+    // Jumps to the next valid comic
+    goNext: function()
+    {
+        viewer.incComic(1);
+    },
+    
+    // Jumps to the last valid comic
+    goLast: function()
+    {
+        viewer.setComic(viewer.lastAllowedComic());
+    },
+    
+    // Jumps a random (valid) comic
+    goRandom: function()
+    {
+        viewer.setComic(viewer.nextRandom);
+        viewer.selectNextRandomComic();
+    },
+    
+    selectNextRandomComic: function()
+    {
+        // Try random comics until we hit one that matches the current settings
+        while (true)
+        {
+            viewer.nextRandom = Math.floor(Math.random()*(comicDB.length));
+            if (viewer.comicAllowed(viewer.nextRandom))
+            {
+                cacheJoinedImages("comics/", comicDB[viewer.nextRandom]["filename"]);
+                break;
+            }
+        }
+    },
+    
+    // Returns true or false depending on whether comicID is valid with current selected options
+    comicAllowed: function(comicID)
+    {
+        if (comicDB[comicID]["isstoryline"] && viewer.useStory() ||
+            !comicDB[comicID]["isstoryline"] && viewer.useExtras())
+        {
+            return true;
+        } else
+        {
+            return false;
+        }
+    },
+    
+    // Finds the closest valid comic ID to the current one based on view settings
+    closestAllowedComic: function(direction)
+    {
+        // Normalize direction - positive is next comic, negative is previous
+        var direction = direction / Math.abs(direction);
+        
+        // Check every comic until we find a valid one, but stop if we go out of bounds
+        for (var comic = viewer.currentComic + direction;
+             comic >= 0 && comic < comicDB.length;
+             comic += direction)
+        {
+            if (viewer.comicAllowed(comic))
+            {
+                return comic;
+            }
+        }
+        
+        // If the function made it this far, no valid comics found
+        return -1;
+    },
+    
+    // Returns ID of first comic valid with current settings
+    firstAllowedComic: function()
+    {
+        for (var i = 0; i < comicDB.length; i++)
+        {
+            if (viewer.comicAllowed(i))
+            {
+                return i;
+            }
+        }
+    },
+    
+    // Returns ID of last comic valid with current settings
+    lastAllowedComic: function()
+    {
+        for (var i = comicDB.length - 1; i >= 0; i--)
+        {
+            if (viewer.comicAllowed(i))
+            {
+                return i;
+            }
+        }
+    },
+    
+    // Hides comic strip for when there is only blog content
+    hideStrip: function()
+    {
+        hideById("title2nav");
+        hideById("navigation-top");
+        hideById("nav2comic");
+        hideById("stripContainer");
+        hideById("comic2nav-bottom");
+    },
+    
+    // Shows comic strip (after hiding for blog-only entry)
+    showStrip: function()
+    {
+        showById("title2nav");
+        showById("navigation-top");
+        showById("nav2comic");
+        showById("stripContainer");
+        showById("comic2nav-bottom");
+    },
+    
+    // Precaches next and previous comics for fast loading
+    preloadComics: function()
+    {
+        var prevComic = viewer.closestAllowedComic(-1);
+        if (prevComic != -1)
+        {
+            cacheJoinedImages("comics/", comicDB[prevComic]["filename"]);
+        }
+        var nextComic = viewer.closestAllowedComic(1);
+        if (nextComic != -1)
+        {
+            cacheJoinedImages("comics/", comicDB[nextComic]["filename"]);
+        }
+    },
+    
+    // Replaces certain variables in string with comic data
+    replaceVariables: function(inputString, comic)
+    {
+        var outputString = inputString;
+        outputString = outputString.replace("%episode%", comic["episode"]);
+        outputString = outputString.replace("%date%", comic["date"]);
+        outputString = outputString.replace("%title%", comic["title"]);
+        return outputString;
+    },
+    
+    // Show or hide the help panel
     toggleHelpPanel: function()
     {
         var helpElement = document.getElementById("helpScreen")
@@ -584,17 +564,55 @@ var viewer = {
         }
     },
     
-    selectNextRandomComic: function()
+    // Returns True if the story checkbox is marked
+    useStory: function()
     {
-        while (true)
+        return document.getElementById("storyCheck").checked
+    },
+    
+    // Returns True if the extras checkbox is marked
+    useExtras: function()
+    {
+        return document.getElementById("extrasCheck").checked
+    },
+    
+    // Save current settings
+    saveOptions: function()
+    {
+        // Save storyline status
+        saveData(comicName+"-usestory", viewer.useStory());
+        // Save extras status
+        saveData(comicName+"-useextras", viewer.useExtras());
+    },
+    
+    storyCheckChanged: function()
+    {
+        // At least one of the two checkboxes must be checked
+        var extrasCheck = document.getElementById("extrasCheck");
+        if (!this.checked && extrasCheck.checked == false)
         {
-            viewer.nextRandom = Math.floor(Math.random()*(comicDB.length));
-            if (comicAllowed(viewer.nextRandom))
-            {
-                cacheJoinedImages("comics/", comicDB[viewer.nextRandom]["filename"]);
-                break;
-            }
+            extrasCheck.checked = true;
         }
+        // Prepare comics for new settings
+        viewer.preloadComics();
+        viewer.selectNextRandomComic();
+        // Save the new settings to local storage
+        viewer.saveOptions();
+    },
+    
+    extrasCheckChanged: function()
+    {
+        // At least one of the two checkboxes must be checked
+        var storyCheck = document.getElementById("storyCheck");
+        if (!this.checked && storyCheck.checked == false)
+        {
+            storyCheck.checked = true;
+        }
+        // Prepare comics for new settings
+        viewer.preloadComics();
+        viewer.selectNextRandomComic();
+        // Save the new settings to local storage
+        viewer.saveOptions();
     },
     
     hashChanged: function()
@@ -611,19 +629,19 @@ var viewer = {
     {
         if (e.which == 189 || e.which == 111) // First comic: - or numpad/ 
         {
-            goFirst();
+            viewer.goFirst();
         } else if (e.which == 219 || e.which == 109) // Previous comic: [ or numpad-
         {
-            goPrev();
+            viewer.goPrev();
         } else if (e.which == 221 || e.which == 107) // Next comic: ] or numpad+
         {
-            goNext();
+            viewer.goNext();
         } else if (e.which == 187 || e.which == 106) // Last comic: = or numpad*
         {
-            goLast();
+            viewer.goLast();
         } else if (e.which == 220 || e.which == 45 || e.which == 0 || e.which == 96) // Random comic: \ or Num 0
         {
-            goRandom();
+            viewer.goRandom();
         } else if (e.which == 72 || e.which == 191) // Show help page
         {
             viewer.toggleHelpPanel();
@@ -631,7 +649,12 @@ var viewer = {
     },
     
     currentComic: 0,
-    nextRandom: 0
+    nextRandom: 0,
+    selectBoxes: document.getElementsByClassName("selector"),
+    titleElement: document.getElementById("title"),
+    stripContainer: document.getElementById("stripContainer"),
+    blogContainer: document.getElementById("blogContainer"),
+    linkElement: document.getElementById("stripUrl")
 }
 
 window.addEventListener("load", viewer.init, false);
