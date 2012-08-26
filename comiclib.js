@@ -200,15 +200,15 @@ function cacheJoinedImages(prefix, filenames)
 // Precaches next and previous comics for fast loading
 function preloadComics()
 {
-	prevComic = closestAllowedComic(-1);
-	if (prevComic != -1)
-	{
-    	cacheJoinedImages("comics/", comicDB[prevComic]["filename"]);
+    var prevComic = closestAllowedComic(-1);
+    if (prevComic != -1)
+    {
+        cacheJoinedImages("comics/", comicDB[prevComic]["filename"]);
     }
-	nextComic = closestAllowedComic(1);
+    var nextComic = closestAllowedComic(1);
     if (nextComic != -1)
     {
-    	cacheJoinedImages("comics/", comicDB[nextComic]["filename"]);
+        cacheJoinedImages("comics/", comicDB[nextComic]["filename"]);
     }
     cacheJoinedImages("comics/", comicDB[firstAllowedComic()]["filename"]);
     cacheJoinedImages("comics/", comicDB[lastAllowedComic()]["filename"]);
@@ -222,7 +222,7 @@ function storyCheckChanged()
 		extrasCheck.checked = true;
 	}
 	preloadComics();
-    selectNextRandomComic();
+    viewer.selectNextRandomComic();
     saveOptions();
 }
 
@@ -234,17 +234,8 @@ function extrasCheckChanged()
 		storyCheck.checked = true;
 	}
 	preloadComics();
-    selectNextRandomComic();
+    viewer.selectNextRandomComic();
     saveOptions();
-}
-
-function hashChanged()
-{
-    comicNumber = parseInt(location.hash.substring(1));
-    if (comicNumber != NaN)
-    {
-        setComic(comicNumber);
-    }
 }
 
 function saveOptions()
@@ -260,7 +251,7 @@ function closestAllowedComic(direction)
 	// Normalize direction
 	direction = direction / Math.abs(direction);
 	
-	for (comic = currentComic + direction;
+	for (comic = viewer.currentComic + direction;
 			comic >= 0 && comic < comicDB.length;
 			comic += direction)
 	{
@@ -329,7 +320,7 @@ function incComic(direction)
 	nextComic = closestAllowedComic(direction);
 	if (nextComic != -1)
 	{
-		setComic(nextComic);
+		viewer.setComic(nextComic);
 	}
 	
 	return nextComic;
@@ -337,7 +328,7 @@ function incComic(direction)
 
 function goFirst()
 {
-	setComic(firstAllowedComic());
+	viewer.setComic(firstAllowedComic());
 }
 
 function goPrev()
@@ -352,66 +343,18 @@ function goNext()
 
 function goLast()
 {
-	setComic(lastAllowedComic());
+	viewer.setComic(lastAllowedComic());
 }
 
 function goRandom()
 {
-	setComic(nextRandom);
-	selectNextRandomComic();
-}
-
-function selectNextRandomComic()
-{
-    while (true)
-    {
-    	nextRandom = Math.floor(Math.random()*(comicDB.length));
-    	if (comicAllowed(nextRandom))
-    	{
-    		cacheJoinedImages("comics/", comicDB[nextRandom]["filename"]);
-    		break;
-    	}
-    }
+	viewer.setComic(viewer.nextRandom);
+	viewer.selectNextRandomComic();
 }
 
 function comicSelected()
 {
-	setComic(this.selectedIndex);
-}
-
-function keyPressedEvent(e)
-{
-	if (e.which == 189 || e.which == 111) // First comic: - or numpad/ 
-	{
-		goFirst();
-	} else if (e.which == 219 || e.which == 109) // Previous comic: [ or numpad-
-	{
-		goPrev();
-	} else if (e.which == 221 || e.which == 107) // Next comic: ] or numpad+
-	{
-		goNext();
-	} else if (e.which == 187 || e.which == 106) // Last comic: = or numpad*
-	{
-		goLast();
-	} else if (e.which == 220 || e.which == 45) // Random comic: \ or Num 0
-	{
-		goRandom();
-	} else if (e.which == 72 || e.which == 191) // Show help page
-	{
-		toggleHelpPanel();
-	}
-}
-
-function toggleHelpPanel()
-{
-	helpElement = document.getElementById("helpScreen")
-	if (helpElement.style.display == "none")
-	{
-		helpElement.style.display = "block";
-	} else if (helpElement.style.display == "block")
-	{
-		helpElement.style.display = "none";
-	}
+    viewer.setComic(this.selectedIndex);
 }
 
 // Replaces variables in string with data
@@ -424,213 +367,271 @@ function replaceVariables(inputString, comic)
 	return outputString;
 }
 
-function setComic(comicNum)
-{
-    currentComic = comicNum;
-    var comic = comicDB[currentComic];
-    
-    // Set the window title
-    prefix = replaceVariables(titleFormat, comic);
-    window.document.title = prefix + " - Comic viewer";
-    // Set hash in URL
-    window.location.hash = currentComic;
-    
-    // Set the selector
-    selectBoxes = document.getElementsByClassName("selector");
-    for (i = 0; i < selectBoxes.length; i++)
+var viewer = {
+    init: function()
     {
-    	selectBoxes[i].selectedIndex = comicNum;
-    }
-    
-    // Set the title
-    titleElement = document.getElementById("title");
-    titleElement.innerHTML = comic["title"];
-    
-    // Set the comic
-    stripContainer = document.getElementById("stripContainer");
-    clearNodeContents(stripContainer);
-    files = comic["filename"].split("||");
-    for (i = 0; i < files.length; i++)
-    {
-	    filename = "comics/"+files[i];
-	    // special processing for Flash files
-	    if (filename.indexOf(".swf") != -1)
-	    {
-	    	fileInfo = filename.split("?");
-	    	dim = fileInfo[1].split(",");
-	    	
-	    	imageElement = document.createElement("embed");
-	    	imageElement.src = fileInfo[0];
-	    	imageElement.width = dim[0];
-	    	imageElement.height = dim[1];
-	    } else
-	    {
-	        imageElement = document.createElement("img");
-	        imageElement.src = filename;
-	        imageElement.title = comic["hovertext"].split("||")[i];
-	        imageElement.alt = "Error loading comic: "+filename;
-	    }
-	    
-	    if (comic["alternate"] != "")
-	    {
-	    	linkElement = document.createElement("a");
-	    	altFile = comic["alternate"].split("||")[i];
-	    	linkElement.href = altFile;
-	    	linkElement.appendChild(imageElement);
-	    	element = linkElement;
-	    } else
-	    {
-	    	element = imageElement;
-	    }
-	    
-	    stripContainer.appendChild(element);
-    }
-    
-    // Preload the next and previous images for faster viewing
-    preloadComics();
-    
-    // Set the blog text
-    blogContainer = document.getElementById("blogContainer");
-    blogText = comicDB[currentComic]["blogtext"];
-    if (blogText != "")
-    {
-    	blogElement = document.getElementById("blog");
-        clearNodeContents(blogElement);
-        blogElement.innerHTML = blogText;
-        blogContainer.style.display = "block";
-    } else
-    {
-    	blogContainer.style.display = "none";
-    }
-    
-    // Set the footer info
-    url = comicDB[currentComic]["url"];
-    linkElement = document.getElementById("stripUrl");
-    clearNodeContents(linkElement);
-    linkElement.appendChild(document.createTextNode(url));
-    linkElement.href = url;
-    
-    // Disable buttons, if needed
-    if (currentComic == 0)
-    {
-    	hideByClassName("navFirst");
-    	hideByClassName("navPrev");
-    	showByClassName("navNext");
-    	showByClassName("navLast");
-    } else if (currentComic == comicDB.length-1)
-    {
-    	showByClassName("navFirst");
-    	showByClassName("navPrev");
-    	hideByClassName("navNext");
-    	hideByClassName("navLast");
-    } else
-    {
-    	showByClassName("navFirst");
-    	showByClassName("navPrev");
-    	showByClassName("navNext");
-    	showByClassName("navLast");
-    }
-    
-    // Set the last-read cookie
-    saveData(comicName+"-last", comicNum)
-    
-    // If no image, hide strip area
-    if (comic["filename"] == "" || comic["filename"] == undefined)
-    {
-    	hideStrip();
-    } else
-    {
-    	showStrip();
-    }
-    
-    // Do any needed comic postprocessing
-    if (typeof(postprocessComic) != "undefined")
-    {
-    	postprocessComic();
-    }
-    
-    // Scroll the page to the beginning
-    window.scroll(0, 0);
-}
-
-function initViewer()
-{
-    // Populate the comic selector
-    selectBoxes = document.getElementsByClassName("selector");
-    for (i = 0; i < comicDB.length; i++)
-    {
-    	optionText = replaceVariables(listFormat, comicDB[i]);
-        option = document.createElement("option");
-    	option.innerHTML = optionText;
-        for (selectNum = 0; selectNum < selectBoxes.length; selectNum++)
+        // Populate the comic selector dropboxes
+        var selectBoxes = document.getElementsByClassName("selector");
+        for (i = 0; i < comicDB.length; i++)
         {
-        	selectBoxes[selectNum].appendChild(option.cloneNode(true));
+            var optionText = replaceVariables(listFormat, comicDB[i]);
+            var option = document.createElement("option");
+            option.innerHTML = optionText;
+            for (var selectNum = 0; selectNum < selectBoxes.length; selectNum++)
+            {
+                selectBoxes[selectNum].appendChild(option.cloneNode(true));
+            }
         }
-    }
         
-    // Set up the navagation links
-    setOnclicks("navFirst", goFirst);
-    setOnclicks("navPrev", goPrev);
-    setOnclicks("navNext", goNext);
-    setOnclicks("navLast", goLast);
-    setOnclicks("navRand", goRandom);
-    setOnclicks("helpToggleLink", toggleHelpPanel);
-    setOnchanges("selector", comicSelected);
-    document.getElementById("storyCheck").onchange = storyCheckChanged;
-    document.getElementById("extrasCheck").onchange = extrasCheckChanged;
+        // Set up the navagation links
+        setOnclicks("navFirst", goFirst);
+        setOnclicks("navPrev", goPrev);
+        setOnclicks("navNext", goNext);
+        setOnclicks("navLast", goLast);
+        setOnclicks("navRand", goRandom);
+        setOnclicks("helpToggleLink", viewer.toggleHelpPanel);
+        setOnchanges("selector", comicSelected);
+        document.getElementById("storyCheck").onchange = storyCheckChanged;
+        document.getElementById("extrasCheck").onchange = extrasCheckChanged;
+        
+        // Set comic to URL hash, if it's defined
+        if (window.location.hash != "")
+        {
+            var initialComic = parseInt(window.location.hash.substring(1))
+            // Sanity check: is the hash value a valid comic ID?
+            if (initialComic < 0 || initialComic >= comicDB.length)
+            {
+                initialComic = 0;
+            }
+        } else  // Else set comic to last read
+        {
+            var initialComic = parseInt(getData(comicName+"-last"));
+            if (isNaN(initialComic))
+                initialComic = 0;
+        }
+        viewer.setComic(initialComic);
+
+        // Prepare first random comic
+        viewer.selectNextRandomComic();
+
+        // Restore story/extras settings
+        var story = getData(comicName+"-usestory");
+        if (story != null)
+        {
+            document.getElementById("storyCheck").checked = (story == "true");
+        }
+        var extras = getData(comicName+"-useextras");
+        if (extras != null)
+        {
+            document.getElementById("extrasCheck").checked = (extras == "true");
+        }
+
+        // Set up keyboard accelerators
+        window.addEventListener("keyup", viewer.keyPressedEvent, false);
+
+        // Perform viewer postprocessing, if any has been defined
+        if (typeof(postprocess) != "undefined")
+        {
+            postprocess();
+        }
+
+        // Track changes to the URL's hash and update the comic
+        window.addEventListener("hashchange", viewer.hashChanged, false);
+        
+        // Now that we're all done, remove the loading screen
+        document.getElementById("loadingScreen").style.display = "none";
+    },
     
-    // Set comic to URL hash
-    if (window.location.hash != "")
+    setComic: function(comicNum)
     {
-    	id = parseInt(window.location.hash.substring(1))
-    	if (id >= 0 && id < comicDB.length)
-    	{
-        	setComic(id);
-    	} else
-    	{
-    		setComic(0);
-    	}
-    } else  // Else set comic to last read
-    {
-	    lastRead = parseInt(getData(comicName+"-last"));
-	    if (isNaN(lastRead))
-	    	lastRead = 0;
-	    setComic(lastRead);
-    }
+        viewer.currentComic = comicNum;
+        var comic = comicDB[comicNum];
+        
+        // Set the window title
+        var prefix = replaceVariables(titleFormat, comic);
+        window.document.title = prefix + " - Comic viewer";
+        
+        // Set hash in URL
+        window.location.hash = comicNum;
+        
+        // Set the selector
+        var selectBoxes = document.getElementsByClassName("selector");
+        for (var i = 0; i < selectBoxes.length; i++)
+        {
+            selectBoxes[i].selectedIndex = comicNum;
+        }
+        
+        // Set the title
+        var titleElement = document.getElementById("title");
+        titleElement.innerHTML = comic["title"];
+        
+        // Set the comic
+        var stripContainer = document.getElementById("stripContainer");
+        clearNodeContents(stripContainer);
+        var files = comic["filename"].split("||");
+        for (i = 0; i < files.length; i++)
+        {
+            var filename = "comics/"+files[i];
+            // special processing for Flash files
+            if (filename.indexOf(".swf") != -1)
+            {
+                var fileInfo = filename.split("?");
+                var dim = fileInfo[1].split(",");
+                
+                var imageElement = document.createElement("embed");
+                imageElement.src = fileInfo[0];
+                imageElement.width = dim[0];
+                imageElement.height = dim[1];
+            } else
+            {
+                var imageElement = document.createElement("img");
+                imageElement.src = filename;
+                imageElement.title = comic["hovertext"].split("||")[i];
+                imageElement.alt = "Error loading comic: "+filename;
+            }
+            
+            if (comic["alternate"] != "")
+            {
+                var linkElement = document.createElement("a");
+                var altFile = comic["alternate"].split("||")[i];
+                linkElement.href = altFile;
+                linkElement.appendChild(imageElement);
+                var element = linkElement;
+            } else
+            {
+                element = imageElement;
+            }
+            
+            stripContainer.appendChild(element);
+        }
+        
+        // Preload the next and previous images for faster viewing
+        preloadComics();
+        
+        // Set the blog text
+        var blogContainer = document.getElementById("blogContainer");
+        var blogText = comicDB[comicNum]["blogtext"];
+        if (blogText != "")
+        {
+            var blogElement = document.getElementById("blog");
+            clearNodeContents(blogElement);
+            blogElement.innerHTML = blogText;
+            blogContainer.style.display = "block";
+        } else
+        {
+            blogContainer.style.display = "none";
+        }
+        
+        // Set the footer info
+        var url = comicDB[comicNum]["url"];
+        var linkElement = document.getElementById("stripUrl");
+        clearNodeContents(linkElement);
+        linkElement.appendChild(document.createTextNode(url));
+        linkElement.href = url;
+        
+        // Disable buttons, if needed
+        if (comicNum == 0)
+        {
+            hideByClassName("navFirst");
+            hideByClassName("navPrev");
+            showByClassName("navNext");
+            showByClassName("navLast");
+        } else if (comicNum == comicDB.length-1)
+        {
+            showByClassName("navFirst");
+            showByClassName("navPrev");
+            hideByClassName("navNext");
+            hideByClassName("navLast");
+        } else
+        {
+            showByClassName("navFirst");
+            showByClassName("navPrev");
+            showByClassName("navNext");
+            showByClassName("navLast");
+        }
+        
+        // Set the last-read cookie
+        saveData(comicName+"-last", comicNum)
+        
+        // If no image, hide strip area
+        if (comic["filename"] == "" || comic["filename"] == undefined)
+        {
+            hideStrip();
+        } else
+        {
+            showStrip();
+        }
+        
+        // Do any needed comic postprocessing
+        if (typeof(postprocessComic) != "undefined")
+        {
+            postprocessComic();
+        }
+        
+        // Scroll the page to the top
+        window.scroll(0, 0);
+    },
     
-    selectNextRandomComic();
-    
-    // Restore story/extras settings
-    story = getData(comicName+"-usestory");
-    if (story != null)
+    toggleHelpPanel: function()
     {
-    	document.getElementById("storyCheck").checked = (story == "true");
-    }
-    extras = getData(comicName+"-useextras");
-    if (extras != null)
-    {
-    	document.getElementById("extrasCheck").checked = (extras == "true");
-    }
-	
-    // Set up keyboard accelerators
-	document.onkeyup = keyPressedEvent;
-	
-	// Perform any postprocessing this viewer requires
-	if (typeof(postprocess) != "undefined")
-	{
-		postprocess();
-	}
-	
-    // Track changes to the URL's hash and update the comic
-    window.onhashchange = hashChanged;
+        var helpElement = document.getElementById("helpScreen")
+        if (helpElement.style.display == "none")
+        {
+            helpElement.style.display = "block";
+        } else if (helpElement.style.display == "block")
+        {
+            helpElement.style.display = "none";
+        }
+    },
     
-	// Now that we're all done, remove the loading screen
-	document.getElementById("loadingScreen").style.display = "none";
+    selectNextRandomComic: function()
+    {
+        while (true)
+        {
+            viewer.nextRandom = Math.floor(Math.random()*(comicDB.length));
+            if (comicAllowed(viewer.nextRandom))
+            {
+                cacheJoinedImages("comics/", comicDB[viewer.nextRandom]["filename"]);
+                break;
+            }
+        }
+    },
+    
+    hashChanged: function()
+    {
+        var comicNumber = parseInt(location.hash.substring(1));
+        // Sanity check: is the hash actually a number?
+        if (comicNumber != NaN)
+        {
+            viewer.setComic(comicNumber);
+        }
+    },
+    
+    keyPressedEvent: function(e)
+    {
+        if (e.which == 189 || e.which == 111) // First comic: - or numpad/ 
+        {
+            goFirst();
+        } else if (e.which == 219 || e.which == 109) // Previous comic: [ or numpad-
+        {
+            goPrev();
+        } else if (e.which == 221 || e.which == 107) // Next comic: ] or numpad+
+        {
+            goNext();
+        } else if (e.which == 187 || e.which == 106) // Last comic: = or numpad*
+        {
+            goLast();
+        } else if (e.which == 220 || e.which == 45 || e.which == 0 || e.which == 96) // Random comic: \ or Num 0
+        {
+            goRandom();
+        } else if (e.which == 72 || e.which == 191) // Show help page
+        {
+            viewer.toggleHelpPanel();
+        }
+    },
+    
+    currentComic: 0,
+    nextRandom: 0
 }
 
-// Init code
-/////////////
-
-var currentComic = 0;
-var nextRandom = 0;
-window.onload = initViewer;
+window.addEventListener("load", viewer.init, false);
