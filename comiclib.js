@@ -78,6 +78,13 @@
  */
 
 
+/* Constants *
+ *************/
+PREVIOUS_COMIC = -1;
+NEXT_COMIC     = 1;
+INVALID_COMIC  = -1;
+
+
 /* Utility functions *
  *********************/
 
@@ -395,7 +402,7 @@ var viewer = {
     incComic: function(direction)
     {
         var nextComic = viewer.closestAllowedComic(direction);
-        if (nextComic != -1)
+        if (nextComic != INVALID_COMIC)
         {
             viewer.setComic(nextComic);
         }
@@ -412,13 +419,13 @@ var viewer = {
     // Jumps to the previous valid comic
     goPrev: function()
     {
-        viewer.incComic(-1);
+        viewer.incComic(PREVIOUS_COMIC);
     },
     
     // Jumps to the next valid comic
     goNext: function()
     {
-        viewer.incComic(1);
+        viewer.incComic(NEXT_COMIC);
     },
     
     // Jumps to the last valid comic
@@ -530,12 +537,12 @@ var viewer = {
     preloadComics: function()
     {
         var prevComic = viewer.closestAllowedComic(-1);
-        if (prevComic != -1)
+        if (prevComic != INVALID_COMIC)
         {
             cacheJoinedImages("comics/", comicDB[prevComic]["filename"]);
         }
         var nextComic = viewer.closestAllowedComic(1);
-        if (nextComic != -1)
+        if (nextComic != INVALID_COMIC)
         {
             cacheJoinedImages("comics/", comicDB[nextComic]["filename"]);
         }
