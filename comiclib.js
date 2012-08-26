@@ -74,7 +74,6 @@
  * 
  * TODO: close help window if you click outside the help pane
  * TODO: blur selection box after selection is made
- * TODO: do something about magic numbers
  */
 
 
@@ -98,14 +97,9 @@ function clearNodeContents(element)
 //Saves a piece of data to localStorage
 function saveData(name, value)
 {
-    // Firefox has a bug that throws an error checking for localStorage if
-    // cookies are disabled. This bug is still present as of v7.0.1.
-    
+    // If localStorage is disabled or not available, just don't save any data
     try {
-        if (typeof(localStorage) != "undefined")
-        {
-            localStorage.setItem(name, value);
-        }
+        localStorage.setItem(name, value);
     } catch(e) {
         return null;
     }
@@ -114,13 +108,9 @@ function saveData(name, value)
 // Gets a piece of data from localStorage
 function getData(name)
 {
-    // See saveData - localStorage has issues on Firefox
-    
+    // If localStorage isn't available just don't load any settings
     try {
-        if (typeof(localStorage) != "undefined")
-        {
-            return localStorage.getItem(name);
-        }
+        return localStorage.getItem(name);
     } catch(e) {
         return null;
     }
