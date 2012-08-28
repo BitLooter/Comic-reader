@@ -636,7 +636,7 @@ var viewer = {
         } else if (e.which == 187 || e.which == 106) // Last comic: = or numpad*
         {
             viewer.goLast();
-        } else if (e.which == 220 || e.which == 45 || e.which == 0 || e.which == 96) // Random comic: \ or Num 0
+        } else if (e.which == 220 || e.which == 45 || e.which == 96) // Random comic: \ or Num 0
         {
             viewer.goRandom();
         } else if (e.which == 72 || e.which == 191) // Show help page
