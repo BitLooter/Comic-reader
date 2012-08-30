@@ -200,7 +200,11 @@ var viewer = {
         setClassEvents("navLast", "click", viewer.goLast);
         setClassEvents("navRand", "click", viewer.goRandom);
         setClassEvents("helpToggleLink", "click", viewer.toggleHelpPanel);
-        setClassEvents("selector", "change", function(){ viewer.setComic(this.selectedIndex); });
+        setClassEvents("selector", "change", function(e){
+            viewer.setComic(this.selectedIndex);
+            // Blur the select box, so page navigation controls don't select comics instead
+            e.target.blur();
+        });
         
         // Watch the options checkboxes
         document.getElementById("storyCheck").addEventListener("change", viewer.storyCheckChanged, false);
