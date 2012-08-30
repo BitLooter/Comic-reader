@@ -549,15 +549,19 @@ var viewer = {
     },
     
     // Show or hide the help panel
-    toggleHelpPanel: function()
+    toggleHelpPanel: function(e)
     {
-        var helpElement = document.getElementById("helpScreen")
+        var helpElement = document.getElementById("helpScreen");
         if (helpElement.style.display == "none")
         {
             helpElement.style.display = "block";
         } else if (helpElement.style.display == "block")
         {
             helpElement.style.display = "none";
+        }
+        if ( typeof(e) != 'undefined' )
+        {
+            e.stopPropagation();
         }
     },
     

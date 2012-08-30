@@ -367,7 +367,7 @@
 </div>
 
 <!-- This is the overlay for the help screen -->
-<div id="helpScreen" style="display: none">
+<div id="helpScreen" class="helpToggleLink" style="display: none; cursor: default">
     <div id="helpContainer" style="display: table;">
         <div style="display: table-cell; vertical-align: middle;">
             <table style="width: 75%; margin: 0 auto;">
