@@ -79,7 +79,6 @@ class ComicDownloaderBase(object):
             self.db = json.load(open(dbPathname, "r"))
     
     def writeComicDB(self):
-        #TODO: Fix booleans being written as strings
         with open(self.filePrefix + "/resource/db.json", "w") as dbfile:
             dbfile.write(json.dumps(self.db, sort_keys=True, indent=4))
     
