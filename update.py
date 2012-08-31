@@ -261,7 +261,6 @@ def downloadArchive(comicRoot, stop=""):
         outfile.write(pageText)
     
     shutil.copyfile("comiclib.js", "{0}/resource/comiclib.js".format(downloader.filePrefix))
-    shutil.copyfile("loading.gif", "{0}/resource/loading.gif".format(downloader.filePrefix))
 
 
 # Start of the program #
