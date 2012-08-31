@@ -1,3 +1,5 @@
+#! /usr/bin/python3
+
 import sys
 import os
 import time
@@ -77,6 +79,7 @@ class ComicDownloaderBase(object):
             self.db = json.load(open(dbPathname, "r"))
     
     def writeComicDB(self):
+        #TODO: Fix booleans being written as strings
         with open(self.filePrefix + "/resource/db.json", "w") as dbfile:
             dbfile.write(json.dumps(self.db, sort_keys=True, indent=4))
     
@@ -253,6 +256,7 @@ def downloadArchive(comicRoot, stop=""):
         dbFile.write("var comicDB = " + json.dumps(downloader.db) + ";")
     templateParameters = getMetadata(downloader.filePrefix)
     pageTemplate = open("template.txt", "r").read()
+    #BUG: if a template parameter is missing, handle the error gracefully
     pageText = Template(pageTemplate).substitute(templateParameters)
     with open("{0}/view.html".format(downloader.filePrefix), "w") as outfile:
         outfile.write(pageText)
