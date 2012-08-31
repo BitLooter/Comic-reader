@@ -16,24 +16,21 @@
  *  the current strip when using the browser's navigation buttons, but the
  *  viewer will still function without it.
  *  
- *  The viewer itself only uses localStorage, but no such guarantee can be
- *  made of the content. Some scrapers written for this make use of multimedia
- *  features such as <video> tags, for example. As blog information is
- *  typically taken directly from the source site, these HTML segments do not
- *  necessarily follow standards.
+ *  Bear in mind that while the viewer itself strives to be portable and
+ *  standards-compliant, no such guarantee can be made of the content scraped
+ *  from the source pages. Blog entries, for example, may include broken HTML
+ *  tags or other errors. It will be up to whoever writes the scraper for a
+ *  given comic (probably me, but not necessarily) to test the results to
+ *  ensure they work properly.
  *  
- *  Some minor concessions were made against standards; the viewer makes use
+ *  A minor concessions were made against standards; the viewer makes use
  *  of innerHTML, because trying to write code to insert prefab HTML scraped
  *  from web pages (that may or may not be themselves standards-compliant)
  *  using the DOM would have cost me my sanity. As innerHTML is by this point
- *  a de-facto standard anyways, I don't foresee this being a problem. The
- *  other minor issue is a check in the localStorage code for an error
- *  condition found on Firefox browsers; cookies disabled in the browser will
- *  cause use of the object to throw a cryptic exception. If Mozilla ever fixes
- *  this I'll remove the check, as I have no interest in adding code cruft to
- *  support out-of-date browsers.
+ *  a de-facto standard anyways, I don't foresee this being a problem.
  * 
  * Version history:
+ *  2012-08-31 v2.0.1  Fixed some minor bugs
  *  2012-08-26 v2.0    Refactored this file. All comic-related functions are in viewer.
  *                     Also, no more (unnecessary) global variables.
  *  2011-11-04 v1.9.3  Added hashChanged function to watch the URL hash
@@ -71,9 +68,6 @@
  *  2010-09-08 v0.9b2  Added date/episode prefixes to selector
  *                     Moved init code to this file
  *  2010-09-05 v0.9b1  Initial basic feature-complete version
- * 
- * TODO: close help window if you click outside the help pane
- * TODO: blur selection box after selection is made
  */
 
 
