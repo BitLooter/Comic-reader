@@ -231,7 +231,8 @@ def getMetadata(comicDir):
     
     comicInfo["timestamp"] = time.strftime("%B %d, %Y %H:%M:%S UTC", time.gmtime())
     # Placeholder for bonus, may get used if bonus.txt is present
-    comicInfo["bonus"] = ""
+    if os.path.exists("{0}/resource/bonus.txt".format(comicDir)):
+        comicInfo["bonus"] = open("{0}/resource/bonus.txt".format(comicDir), "r").read()
     
     return comicInfo
 

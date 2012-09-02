@@ -24,7 +24,6 @@
         #blogContainer { display: none; }
         #blog { margin: 16pt; }
         #bonusContainer { display: none; }
-        #bonusFrame { border: none; height: 30pt; }
         #footerContainer { text-align: left; font-size: xx-small;
                            border-top: 1px solid black; 
                            margin: 0 5%; margin-top: 36pt; padding: 0.5em 1em; }
@@ -311,10 +310,7 @@
 <div id="blog2bonus"></div>
 
 <div id="bonusContainer">
-    <iframe id="bonusFrame" src="resource/bonus.html">
-        Bonus content not available: your browser does not support iframes.
-        Why don't you upgrade to one released this century?
-    </iframe>
+    $bonus
 </div>
 
 <div id="bonus2footer"></div>
